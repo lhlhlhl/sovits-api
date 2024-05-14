@@ -13,4 +13,4 @@ EXPOSE $MODEL_PORT
 # 测试环境
 # ENV CONFIG_NAME testing
 
-CMD python api2.py -a $MODEL_HOST -p $MODEL_PORT ${MODEL_S:+-s} $MODEL_S ${MODEL_G:+-g} $MODEL_G ${MODEL_DR:+-dr} $MODEL_DR ${MODEL_DT:+-dt} $MODEL_DT$ {MODEL_DL:+-dl} $MODEL_DL
+CMD python api2.py -a $MODEL_HOST -p $MODEL_PORT ${MODEL_S:+-s} $MODEL_S ${MODEL_G:+-g} $MODEL_G ${MODEL_DR:+-dr} $MODEL_DR ${MODEL_DT:+-dt} $MODEL_DT ${MODEL_DL:+-dl} $MODEL_DL
