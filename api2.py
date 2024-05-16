@@ -148,7 +148,8 @@ POST方式:
 import os, re, logging,argparse,torch,sys
 from urllib.request import urlopen
 
-import requests
+import boto3
+from botocore.exceptions import NoCredentialsError
 
 if torch.cuda.is_available():
     device = "cuda"
@@ -230,7 +231,8 @@ from GPT_SoVITS.text import cleaned_text_to_sequence
 from GPT_SoVITS.text.cleaner import clean_text
 from time import time as ttime
 from GPT_SoVITS.module.mel_processing import spectrogram_torch
-from GPT_SoVITS.my_utils import load_audio
+from GPT_SoVITS.my_utils import load_audio, get_audio_from_s3
+
 cnhubert.cnhubert_base_path = args.hubert_path
 
 logging.getLogger("markdown_it").setLevel(logging.ERROR)
@@ -349,8 +351,8 @@ def change_gpt_weights(gpt_path):
 change_gpt_weights(gpt_path)
 
 
-def get_spepc(hps, filename):
-    audio = load_audio(filename, int(hps.data.sampling_rate))
+def get_spepc(hps, file):
+    audio = load_audio(file, int(hps.data.sampling_rate))
     audio = torch.FloatTensor(audio)
     audio_norm = audio
     audio_norm = audio_norm.unsqueeze(0)
@@ -524,6 +526,8 @@ def merge_short_text_in_array(texts, threshold):
             result[len(result) - 1] += text
     return result
 
+
+
 def get_tts_wav(*,refer_wav_path, prompt_text, prompt_language="zh", text="", text_language="zh", top_k=5, top_p=1, temperature=1, ref_free = False):
     text+='.'
     print(f'{refer_wav_path=},{prompt_text=},{prompt_language=},{text=},{text_language=}')
@@ -548,24 +552,21 @@ def get_tts_wav(*,refer_wav_path, prompt_text, prompt_language="zh", text="", te
         int(hps.data.sampling_rate * 0.3),
         dtype=np.float16 if is_half == True else np.float32,
     )
+    # 读s3上的音频
+    audio_file = get_audio_from_s3("oz-cloud-bucket", refer_wav_path)
+    wav, sr = sf.read(audio_file)
+    logging.info("wav变量的类型是：%s", type(wav[0]))
+    wav16k = wav.astype('float32')
+    print("wav16k的类型：%s", type(wav16k[0]))
+    wav16k = librosa.resample(wav16k, sr, 16000)
+    logging.info("读取的音频文件时长：%s", wav16k.shape[0])
+
     with torch.no_grad():
-        # TODO 改成读网络上的音频
-        wav, sr = sf.read(BytesIO(urlopen(refer_wav_path).read()))
-        print("wav16k的类型：%s",type(wav[0]))
 
-        wav16k = wav.astype('float32')
-        wav16k = librosa.resample(wav16k, sr, 16000)
+        # wav, sr = sf.read(BytesIO(urlopen(refer_wav_path).read()))
+        # print("wav的类型：%s", type(wav[0]))
+
         # wav16k, sr = librosa.load(refer_wav_path, sr=16000)
-        # response = requests.get(refer_wav_path)
-
-        # Ensure the request was successful
-        # response.raise_for_status()
-
-        # Read the audio file
-        # audio_file = BytesIO(response.content)
-        # wav, sr = sf.read(audio_file)
-
-        logging.info("读取的音频文件时长：%s",wav16k.shape[0])
         # if (wav16k.shape[0] > 160000 or wav16k.shape[0] < 48000):
         #     raise OSError(("参考音频在3~10秒范围外，请更换！"))
         wav16k = torch.from_numpy(wav16k)
@@ -645,7 +646,7 @@ def get_tts_wav(*,refer_wav_path, prompt_text, prompt_language="zh", text="", te
         pred_semantic = pred_semantic[:, -idx:].unsqueeze(
             0
         )  # .unsqueeze(0)#mq要多unsqueeze一次
-        refer = get_spepc(hps, refer_wav_path)  # .to(device)
+        refer = get_spepc(hps, audio_file)  # .to(device)
         if is_half == True:
             refer = refer.half().to(device)
         else:
