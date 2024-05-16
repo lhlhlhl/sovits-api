@@ -3,7 +3,7 @@ FROM python:3.9-slim-buster
 WORKDIR /app
 
 COPY . /app
-# RUN if [ -f /app/SoVITS_weights/xxx_e12_s96.pth ]; then echo "/app/SoVITS_weights/xxx_e12_s96.pth exists"; else echo "/app/SoVITS_weights/xxx_e12_s96.pth does not exist"; exit 1; fi
+RUN if [ -f /app/SoVITS_weights/xxx_e12_s96.pth ]; then echo "/app/SoVITS_weights/xxx_e12_s96.pth exists"; else echo "/app/SoVITS_weights/xxx_e12_s96.pth does not exist"; exit 1; fi
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential libmariadb-dev-compat libmariadb-dev gcc && \
     pip install --no-cache-dir -r requirements.txt && \
