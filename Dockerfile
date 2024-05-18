@@ -5,9 +5,10 @@ WORKDIR /app
 COPY . /app
 # RUN if [ -f /app/SoVITS_weights/xxx_e12_s96.pth ]; then echo "/app/SoVITS_weights/xxx_e12_s96.pth exists"; else echo "/app/SoVITS_weights/xxx_e12_s96.pth does not exist"; exit 1; fi
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential libmariadb-dev-compat libmariadb-dev gcc && \
+    apt-get install -y --no-install-recommends build-essential libmariadb-dev-compat libmariadb-dev gcc ffmpeg && \
     pip install --no-cache-dir -r requirements.txt && \
     python -m nltk.downloader averaged_perceptron_tagger cmudict
+
 
 EXPOSE $MODEL_PORT
 
