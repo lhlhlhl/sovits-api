@@ -1,1 +1,1 @@
-GPT_SoVITS/pretrained_models/s2G488k.pth
+SoVITS_weights/xxx_e12_s96.pth
