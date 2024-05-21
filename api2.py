@@ -150,6 +150,7 @@ from urllib.request import urlopen
 
 import boto3
 from botocore.exceptions import NoCredentialsError
+from pydub import AudioSegment
 
 if torch.cuda.is_available():
     device = "cuda"
@@ -552,13 +553,24 @@ def get_tts_wav(*,refer_wav_path, prompt_text, prompt_language="zh", text="", te
         int(hps.data.sampling_rate * 0.3),
         dtype=np.float16 if is_half == True else np.float32,
     )
-    # 读s3上的音频
+    # 从S3获取音频文件
     audio_file = get_audio_from_s3("oz-cloud-bucket", refer_wav_path)
-    wav, sr = sf.read(audio_file)
-    logging.info("wav变量的类型是：%s", type(wav[0]))
-    wav16k = wav.astype('float32')
-    print("wav16k的类型：%s", type(wav16k[0]))
-    wav16k = librosa.resample(wav16k, sr, 16000)
+    # 使用pydub读取音频文件
+    audio = AudioSegment.from_file(audio_file)
+    # 修改采样率
+    audio = audio.set_frame_rate(16000)
+    # 转换为numpy数组并确保为float32类型
+    wav16k = np.array(audio.get_array_of_samples()).astype(np.float32)
+    # 如果音频是立体声，需要转换为单声道
+    if audio.channels == 2:
+        wav16k = wav16k[::2]
+
+    # audio_file = get_audio_from_s3("oz-cloud-bucket", refer_wav_path)
+    # wav, sr = sf.read(audio_file)
+    # logging.info("wav变量的类型是：%s", type(wav[0]))
+    # wav16k = wav.astype('float32')
+    # print("wav16k的类型：%s", type(wav16k[0]))
+    # wav16k = librosa.resample(wav16k, sr, 16000)
     logging.info("读取的音频文件时长：%s", wav16k.shape[0])
 
     with torch.no_grad():
