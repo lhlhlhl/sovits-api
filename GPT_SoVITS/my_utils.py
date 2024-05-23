@@ -19,8 +19,6 @@ def get_audio_from_s3(bucket_name, s3_key):
         logging.warning(f"The file {s3_key} was not found")
         return None
     audio_data = obj['Body'].read()
-    print("audio_data: ", audio_data)
-    print("audio_data的类型：%s", type(audio_data))
     audio_file = BytesIO(audio_data)
     return audio_file
 
